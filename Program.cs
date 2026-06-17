@@ -18,7 +18,9 @@ app.MapPost("/workflow/execute", async (WorkflowInput input) =>
 {
     var results = new List<string>();
 
-    foreach(var rule in input.Rules)
+    using var client = new HttpClient(); 
+
+    foreach (var rule in input.Rules)
     {
         var propertyInfo = typeof(WorkflowInput).GetProperty(rule.Field);
 
@@ -29,51 +31,64 @@ app.MapPost("/workflow/execute", async (WorkflowInput input) =>
 
         bool conditionMet = false;
 
-        switch(rule.Operator)
+        switch (rule.Operator)
         {
             case ">":
                 conditionMet = fieldValue > rule.Value;
                 break;
+
             case "<":
                 conditionMet = fieldValue < rule.Value;
                 break;
+
             case "=":
                 conditionMet = fieldValue == rule.Value;
-                break;            
-        } 
+                break;
+        }
 
-        if(conditionMet)
+        if (!conditionMet)
+            continue;
+
+        // Executar ação
+        switch (rule.Action)
         {
-            // Executa a ação
-            switch(rule.Action)
+            case "CallAPI":
             {
-                case "CallAPI": // Chama a API
+                if (string.IsNullOrEmpty(rule.Endpoint))
+                    break;
+
+                try
+                {
+                    HttpContent? content = null;
+
+                    if (!string.IsNullOrEmpty(rule.Payload))
                     {
-                        if(string.IsNullOrEmpty(rule.Endpoint))
-                        break;
-
-                        var client = new HttpClient();
-
-                        HttpContent content = null;
-
-                        if(!string.IsNullOrEmpty(rule.Payload))
-                        {
-                            content = new StringContent(rule.Payload, System.Text.Encoding.UTF8, "application/json");
-                        }
-
-                        var response = await client.PostAsync(rule.Endpoint, content);
-
-                        results.Add($"Called API: {rule.Endpoint} - Status: {response.StatusCode}");
-
-                        break;
+                        content = new StringContent(
+                            rule.Payload,
+                            System.Text.Encoding.UTF8,
+                            "application/json"
+                        );
                     }
-                case "Log":
-                    // guardar ou print
-                    break;
-                case "Notify":
-                    // simular alerta
-                    break;
+
+                    var response = await client.PostAsync(rule.Endpoint, content);
+
+                    results.Add($"Called API: {rule.Endpoint} - Status: {response.StatusCode}");
+                }
+                catch (Exception ex)
+                {
+                    results.Add($"API call failed: {ex.Message}");
+                }
+
+                break;
             }
+
+            case "Log":
+                results.Add("Log action executed");
+                break;
+
+            case "Notify":
+                results.Add("Notify action executed");
+                break;
         }
     }
 
@@ -82,7 +97,6 @@ app.MapPost("/workflow/execute", async (WorkflowInput input) =>
 
     return Results.Ok(results);
 });
-
 
 app.Run();
 
@@ -93,5 +107,5 @@ record Rule (
     int Value,
     string Action,
     string? Endpoint,
-    string? Payload
+    object? Payload
 );

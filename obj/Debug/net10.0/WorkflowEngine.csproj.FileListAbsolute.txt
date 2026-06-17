@@ -31,3 +31,4 @@ C:\Users\glucio\OneDrive - Capgemini\Ambiente de Trabalho\OS_WorkFlowEngine\Work
 C:\Users\glucio\OneDrive - Capgemini\Ambiente de Trabalho\OS_WorkFlowEngine\WorkflowEngine\obj\Debug\net10.0\WorkflowEngine.pdb
 C:\Users\glucio\OneDrive - Capgemini\Ambiente de Trabalho\OS_WorkFlowEngine\WorkflowEngine\obj\Debug\net10.0\WorkflowEngine.genruntimeconfig.cache
 C:\Users\glucio\OneDrive - Capgemini\Ambiente de Trabalho\OS_WorkFlowEngine\WorkflowEngine\obj\Debug\net10.0\ref\WorkflowEngine.dll
+C:\Users\glucio\OneDrive - Capgemini\Ambiente de Trabalho\OS_WorkFlowEngine\WorkflowEngine\obj\Debug\net10.0\WorkflowEngine.sourcelink.json
