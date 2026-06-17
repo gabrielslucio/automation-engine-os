@@ -67,6 +67,9 @@ app.MapPost("/workflow/execute", async (WorkflowInput input) =>
                         {
                             var json = JsonSerializer.Serialize(rule.Payload);
 
+                            // aplicar template
+                            json = ReplacePlaceholders(json, input);
+
                             content = new StringContent(
                                 json,
                                 System.Text.Encoding.UTF8,
@@ -101,6 +104,18 @@ app.MapPost("/workflow/execute", async (WorkflowInput input) =>
 
     return Results.Ok(results);
 });
+
+string ReplacePlaceholders(string json, WorkflowInput input)
+{
+    foreach(var prop in typeof(WorkflowInput).GetProperties())
+    {
+        var value = prop.GetValue(input)?.ToString() ?? "";
+
+        json = json.Replace($"{{{{{prop.Name}}}}}", value);
+    }
+
+    return json;
+}
 
 app.Run();
 
