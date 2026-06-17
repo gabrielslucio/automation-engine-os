@@ -1,12 +1,13 @@
 using System.Text.Json;
 var builder = WebApplication.CreateBuilder(args);
 
-
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+var logger = app.Logger;
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -16,8 +17,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+
+
 app.MapPost("/workflow/execute", async (WorkflowInput input) =>
 {
+    logger.LogInformation("Workflow execution has started.");
+
     var results = new List<string>();
 
     using var client = new HttpClient(); 
@@ -26,9 +31,14 @@ app.MapPost("/workflow/execute", async (WorkflowInput input) =>
     {
         var propertyInfo = typeof(WorkflowInput).GetProperty(rule.Field);
 
-        if (propertyInfo == null)
-            continue;
+        logger.LogInformation($"Evaluating rule: {rule.Field} {rule.Operator} {rule.Value}");
 
+        if (propertyInfo == null)
+        {
+            logger.LogWarning($"Invalid field: {rule.Field}");
+            continue;   
+        }
+        
         int fieldValue = (int)propertyInfo.GetValue(input);
 
         bool conditionMet = false;
@@ -36,7 +46,7 @@ app.MapPost("/workflow/execute", async (WorkflowInput input) =>
         switch (rule.Operator)
         {
             case ">":
-                conditionMet = fieldValue > rule.Value;
+                conditionMet = fieldValue > rule.Value;                    
                 break;
 
             case "<":
@@ -49,7 +59,12 @@ app.MapPost("/workflow/execute", async (WorkflowInput input) =>
         }
 
         if (!conditionMet)
+        {
+            logger.LogInformation($"Condition not met for rule: {rule.Field}");
             continue;
+        }
+
+        logger.LogInformation($"Condition met for rule: {rule.Field}");
 
         // Executar ação
         switch (rule.Action)
@@ -57,7 +72,12 @@ app.MapPost("/workflow/execute", async (WorkflowInput input) =>
             case "CallAPI":
             {
                 if (string.IsNullOrEmpty(rule.Endpoint))
+                {
+                    logger.LogWarning("Endpoint is missing, cannot call API.");
                     break;
+                }
+
+                logger.LogInformation($"Calling API: {rule.Endpoint}");
 
                 try
                 {
@@ -66,6 +86,7 @@ app.MapPost("/workflow/execute", async (WorkflowInput input) =>
                     if (rule.Payload != null)
                         {
                             var json = JsonSerializer.Serialize(rule.Payload);
+                            logger.LogInformation($"Payload: {json}");
 
                             // aplicar template
                             json = ReplacePlaceholders(json, input);
@@ -79,10 +100,13 @@ app.MapPost("/workflow/execute", async (WorkflowInput input) =>
 
                     var response = await client.PostAsync(rule.Endpoint, content);
 
+                    logger.LogInformation($"API response from {rule.Endpoint}: {response.StatusCode}");
+
                     results.Add($"Called API: {rule.Endpoint} - Status: {response.StatusCode}");
                 }
                 catch (Exception ex)
                 {
+                    logger.LogError(ex,"Failed calling API.");
                     results.Add($"API call failed: {ex.Message}");
                 }
 
@@ -117,7 +141,9 @@ string ReplacePlaceholders(string json, WorkflowInput input)
     return json;
 }
 
+
 app.Run();
+
 
 record WorkflowInput(int OverdueTasks, int TotalTasks, List<Rule> Rules);
 record Rule (

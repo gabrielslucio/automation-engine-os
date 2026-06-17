@@ -2,21 +2,22 @@ POST http://localhost:5050/workflow/execute
 Content-Type: application/json
 
 
+
 {
-    "OverdueTasks": 7,
-    "TotalTasks": 10,
-    "Rules": [
-        {
-            "Field": "OverdueTasks",
-            "Operator": ">",
-            "Value": 5,
-            "Action": "CallAPI",
-            "Endpoint": "https://webhook.site/3bc71d1c-bd91-443e-981d-741ac4160609",
-            "Payload": {
-                "message": "Risk detected",
-                "projectId": 123,
-                "overdueTasks": 7
-            }
-        }
-    ]
+  "OverdueTasks": 7,
+  "TotalTasks": 20,
+  "Rules": [
+    {
+      "Field": "OverdueTasks",
+      "Operator": ">",
+      "Value": 5,
+      "Action": "CallAPI",
+      "Endpoint": "https://webhook.site/3bc71d1c-bd91-443e-981d-741ac4160609",
+      "Payload": {
+        "message": "Risk detected",
+        "overdueTasks": "{{OverdueTasks}}",
+        "totalTasks": "{{TotalTasks}}"
+      }
+    }
+  ]
 }
