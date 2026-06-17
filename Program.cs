@@ -1,4 +1,6 @@
+using System.Text.Json;
 var builder = WebApplication.CreateBuilder(args);
+
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -61,14 +63,16 @@ app.MapPost("/workflow/execute", async (WorkflowInput input) =>
                 {
                     HttpContent? content = null;
 
-                    if (!string.IsNullOrEmpty(rule.Payload))
-                    {
-                        content = new StringContent(
-                            rule.Payload,
-                            System.Text.Encoding.UTF8,
-                            "application/json"
-                        );
-                    }
+                    if (rule.Payload != null)
+                        {
+                            var json = JsonSerializer.Serialize(rule.Payload);
+
+                            content = new StringContent(
+                                json,
+                                System.Text.Encoding.UTF8,
+                                "application/json"
+                            );
+                        }
 
                     var response = await client.PostAsync(rule.Endpoint, content);
 
